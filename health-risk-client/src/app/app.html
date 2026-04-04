@@ -1,0 +1,84 @@
+<div class="page">
+  <div class="card">
+    <h1>{{ title() }}</h1>
+    <p class="subtitle">Enter your details to predict health risk.</p>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="birthdate">Birth Date</label>
+        <input
+          id="birthdate"
+          type="date"
+          [(ngModel)]="formData.birthdate"
+          (change)="onBirthdateChange()"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="age">Age</label>
+        <input
+          id="age"
+          type="number"
+          [value]="formData.age ?? ''"
+          disabled
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="height">Height (cm)</label>
+        <input
+          id="height"
+          type="number"
+          [(ngModel)]="formData.height"
+          (input)="calculateBMI()"
+          placeholder="e.g. 170"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="weight">Weight (kg)</label>
+        <input
+          id="weight"
+          type="number"
+          [(ngModel)]="formData.weight"
+          (input)="calculateBMI()"
+          placeholder="e.g. 65"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="bmi">BMI</label>
+        <input
+          id="bmi"
+          type="number"
+          [value]="formData.bmi ?? ''"
+          disabled
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="smoking">Smoking</label>
+        <select id="smoking" [(ngModel)]="formData.smoking">
+          <option value="No">No</option>
+          <option value="Yes">Yes</option>
+        </select>
+      </div>
+
+      <div class="form-group full-width">
+        <label for="exercise">Exercise Level</label>
+        <select id="exercise" [(ngModel)]="formData.exercise">
+          <option value="Low">Low</option>
+          <option value="Moderate">Moderate</option>
+          <option value="High">High</option>
+        </select>
+      </div>
+    </div>
+
+    <button (click)="predictRisk()">Predict Risk</button>
+
+    <div class="result" *ngIf="result">
+      <h3>Prediction Result</h3>
+      <p>{{ result }}</p>
+    </div>
+  </div>
+</div>
