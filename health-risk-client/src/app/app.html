@@ -74,11 +74,19 @@
       </div>
     </div>
 
-    <button (click)="predictRisk()">Predict Risk</button>
+    <button (click)="predictRisk()" [disabled]="loading">
+      {{ loading ? 'Predicting...' : 'Predict Risk' }}
+    </button>
 
-    <div class="result" *ngIf="result">
+    <div *ngIf="loading">
+      <div class="spinner"></div>
+      <p>Calculating your health risk...</p>
+    </div>
+
+    <div class="result" *ngIf="result && !loading">
       <h3>Prediction Result</h3>
       <p>{{ result }}</p>
     </div>
+
   </div>
 </div>

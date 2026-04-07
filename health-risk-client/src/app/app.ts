@@ -1,6 +1,15 @@
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../environments/environment';
+import { ChangeDetectorRef } from '@angular/core';
+
+export interface PredictResponse {
+  age: number;
+  bmi: number;
+  riskLevel: string;
+}
 
 @Component({
   selector: 'app-root',
@@ -10,6 +19,11 @@ import { CommonModule } from '@angular/common';
   styleUrl: './app.css'
 })
 export class App {
+
+  constructor(private readonly http: HttpClient,
+    private cdr: ChangeDetectorRef
+  ) {}
+
   protected readonly title = signal('Health Risk Predictor');
 
   formData = {
@@ -23,6 +37,7 @@ export class App {
   };
 
   result = '';
+  loading = false;
 
   onBirthdateChange() {
     if (!this.formData.birthdate) {
@@ -65,6 +80,7 @@ export class App {
 
     if (age === null || bmi === null) {
       this.result = 'Please enter valid birth date, height, and weight.';
+      this.loading = false;
       return;
     }
 
@@ -75,22 +91,22 @@ export class App {
       exercise
     };
 
+    this.loading = true;
+    this.result = '';
     console.log('Send this to backend:', payload);
-
-    // Temporary frontend-only logic for now
-    let score = 0;
-
-    if (age > 50) score += 2;
-    if (bmi > 30) score += 2;
-    if (smoking === 'Yes') score += 2;
-    if (exercise === 'Low') score += 1;
-
-    if (score >= 5) {
-      this.result = 'High Risk';
-    } else if (score >= 3) {
-      this.result = 'Medium Risk';
-    } else {
-      this.result = 'Low Risk';
-    }
+    const url = environment.apiUrl + '/predict';
+    this.http.post<PredictResponse>(url, payload, { responseType: 'json' }).subscribe({
+      next: (resp: PredictResponse) => {
+        console.log('Response received:', resp);
+        this.result = resp.riskLevel;
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error:', err);
+        this.result = 'Failed to get prediction from backend.';
+        this.loading = false;
+      }
+    });
   }
 }
