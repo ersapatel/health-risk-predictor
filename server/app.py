@@ -1,8 +1,13 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import numpy as np
+import joblib
+import os
 
 app = Flask(__name__)
 CORS(app)
+
+model = joblib.load("health_risk_model_1.pkl")
 
 
 def encode_smoking(smoking: str) -> int:
@@ -11,43 +16,20 @@ def encode_smoking(smoking: str) -> int:
 
 def encode_exercise(exercise_level: str) -> int:
     value = str(exercise_level).strip().lower()
+
     mapping = {
-        "low": 0,
-        "moderate": 1,
-        "high": 2
+        "none": 0,
+        "low": 1,
+        "moderate": 2,
+        "medium": 2,
+        "high": 3
     }
+
     return mapping.get(value, 1)
 
 
-# Temporary prediction logic
-# Replace this later with real ML model prediction
-def predict_risk(age: int, bmi: float, smoking: int, exercise: int) -> str:
-    score = 0
-
-    if age > 50:
-        score += 2
-    elif age > 35:
-        score += 1
-
-    if bmi > 30:
-        score += 2
-    elif bmi > 25:
-        score += 1
-
-    if smoking == 1:
-        score += 2
-
-    if exercise == 0:   # low
-        score += 1
-    elif exercise == 2: # high
-        score -= 1
-
-    if score >= 5:
-        return "High Risk"
-    elif score >= 3:
-        return "Medium Risk"
-    else:
-        return "Low Risk"
+def decode_risk(prediction: int) -> str:
+    return "High Risk" if int(prediction) == 1 else "Low Risk"
 
 
 @app.route("/", methods=["GET"])
@@ -70,20 +52,30 @@ def predict():
         smoking_encoded = encode_smoking(smoking)
         exercise_encoded = encode_exercise(exercise)
 
-        risk_level = predict_risk(age, bmi, smoking_encoded, exercise_encoded)
+        features = np.array([[age, bmi, smoking_encoded, exercise_encoded]])
 
-        return jsonify({
+        prediction = model.predict(features)[0]
+        risk_level = decode_risk(prediction)
+
+        response = {
             "age": age,
             "bmi": bmi,
             "riskLevel": risk_level
-        })
+        }
+
+        if hasattr(model, "predict_proba"):
+            probabilities = model.predict_proba(features)[0]
+            confidence = round(float(max(probabilities)) * 100, 2)
+            response["confidence"] = confidence
+
+        return jsonify(response)
 
     except Exception as e:
         return jsonify({
             "error": str(e)
         }), 400
 
-import os
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5001))
     app.run(debug=True, host="0.0.0.0", port=port)
